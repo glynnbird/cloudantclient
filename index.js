@@ -1,21 +1,46 @@
 const http2 = require('node:http2')
 const querystring = require('node:querystring')
 const CookieJar = require('./cookie.js')
+const IAM = require('./iam.js')
 
+/**
+ * Cloudant HTTP2 Client
+ *
+ * Communicates with Cloudant using HTTP2. Can use username/password or IAM 
+ * authentication. Once authenticated, any HTTP2 request can be made on the
+ * connection
+ */
 class CloudantClient {
+  /**
+   * CloudantClient constructor.
+   * @param {string} url The Cloudant URL to connect to.
+   */
   constructor (url) {
     this.url = url
     this.client = null
     this.ready = false
     this.jar = new CookieJar()
+    this.accessToken = null
+    this.accessTokenExpiration = 0
     this.connect()
   }
 
+  /**
+   * Connect to Cloudant service using HTTP2. Called automatically by
+   * the constructor.
+   */
   connect () {
     this.client = http2.connect(this.url)
     this.client.on('error', this.errorHandler)
   }
 
+  /**
+   * Authenticate with Cloudant by passing a username and password and
+   * getting a "Set-Cookie" header. The cookie can be return to the server
+   * to allow access from then on.
+   * @param {string} username The Cloudant username or apikey.
+   * @param {string} password The Cloudant password.
+   */
   async auth (username, password) {
     await this.request({
       method: 'POST',
@@ -26,21 +51,44 @@ class CloudantClient {
     this.ready = true
   }
 
+  /**
+   * Authenticate with IBM's IAM service by exchanging an apikey
+   * for a bearer token
+   * @param {string} apiKey The IBM IAM API key
+   */
+  async iam (apiKey) {
+    const iamClient = new IAM()
+    const response = await iamClient.auth(apiKey)
+    this.accessToken = response.access_token
+    this.accessTokenExpiration = response.expiration
+  }
+
+  /**
+   * Disconnect the HTTP2 connection to Cloudant
+   */
   disconnect () {
     this.client.close()
   }
 
+  /**
+   * Handle error responses from the client
+   */
   errorHandler (err) {
     console.error(err)
   }
 
+  /**
+   * Make requests over the established HTTP2 connection.
+   * @param {object} opts The request options. method/path/body/qs
+   * @return {object} The returned data
+   */
   async request (opts) {
     return new Promise((resolve, reject) => {
       if (!opts) {
         opts = {}
       }
       if (opts.method) {
-        opts[':method'] = opts.method
+        opts[':method'] = opts.method.toUpperCase()
         delete opts.method
       }
       if (opts.path) {
@@ -67,15 +115,28 @@ class CloudantClient {
         delete opts.qs
       }
 
+      // iam
+      if (this.accessToken) {
+        opts.authorization = 'Bearer ' + this.accessToken
+      }
+
+      // body
+      let body = null
+      if (opts.body) {
+        if (typeof opts.body === 'object') {
+          body = JSON.stringify(opts.body)
+        } else {
+          body = opts.body
+        }
+        delete opts.body
+      }
+
       // make the request
       const req = this.client.request(opts)
 
       // optionally send request body
-      if (opts.body && typeof opts.body === 'object') {
-        opts.body = JSON.stringify(opts.body)
-      }
-      if (opts.body) {
-        req.write(opts.body)
+      if (body) {
+        req.write(body)
       }
 
       // indicated we're finished sending
