@@ -34,3 +34,10 @@ console.log(JSON.stringify(response))
 // disconnect
 client.disconnect()
 ```
+
+## Authentication
+
+This library supports two types of authentication
+
+- `await client.auth('username', 'password')` - creates a session with a client and uses cookies so that the session is refreshed assuming regular usage.
+- `await client.iam('apikey', true)` - exchanges your IAM API key for a bearer token. If `true` is passed as the second parameter, the token is refreshed towards the end of tokens lifetime.

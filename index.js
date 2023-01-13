@@ -22,6 +22,7 @@ class CloudantClient {
     this.jar = new CookieJar()
     this.accessToken = null
     this.accessTokenExpiration = 0
+    this.refreshTimeout = null
     this.connect()
   }
 
@@ -55,12 +56,19 @@ class CloudantClient {
    * Authenticate with IBM's IAM service by exchanging an apikey
    * for a bearer token
    * @param {string} apiKey The IBM IAM API key
+   * @param {boolean} autoRefresh Whether to refresh the token prior to its expiration
    */
-  async iam (apiKey) {
+  async iam (apiKey, autoRefresh) {
     const iamClient = new IAM()
     const response = await iamClient.auth(apiKey)
     this.accessToken = response.access_token
     this.accessTokenExpiration = response.expiration
+    if (autoRefresh) {
+      const delay = response.expires_in * 1000 - 60000 // a minute before expiry
+      this.refreshTimeout = setTimeout(() => {
+        this.iam(apiKey, true)
+      }, delay)
+    }
   }
 
   /**
@@ -68,6 +76,10 @@ class CloudantClient {
    */
   disconnect () {
     this.client.close()
+    if (this.refreshTimeout) {
+      clearTimeout(this.refreshTimeout)
+      this.refreshTimeout = null
+    }
   }
 
   /**
