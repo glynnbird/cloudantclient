@@ -1,0 +1,10 @@
+{
+  "name": "cloudantclient",
+  "version": "1.0.0",
+  "description": "HTTP2 client for Cloudant",
+  "main": "index.js",
+  "scripts": {
+  },
+  "author": "Glynn Bird <glynn.bird@gmail.com>",
+  "license": "Apache-2.0"
+}
