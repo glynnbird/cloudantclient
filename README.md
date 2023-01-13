@@ -5,8 +5,8 @@ A p.o.c minimal Cloudant HTTP2 client.
 ## Usage
 
 ```js
-const client = new CloudantClient(URL, USERNAME, PASSWORD)
-await client.auth()
+const client = new CloudantClient(URL)
+await client.auth(USERNAME, PASSWORD)
 
 // get a list of databases
 let response = await client.request({

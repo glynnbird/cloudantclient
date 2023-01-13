@@ -3,10 +3,8 @@ const querystring = require('node:querystring')
 const CookieJar = require('./cookie.js')
 
 class CloudantClient {
-  constructor (url, username, password) {
+  constructor (url) {
     this.url = url
-    this.username = username
-    this.password = password
     this.client = null
     this.ready = false
     this.jar = new CookieJar()
@@ -18,12 +16,12 @@ class CloudantClient {
     this.client.on('error', this.errorHandler)
   }
 
-  async auth () {
+  async auth (username, password) {
     await this.request({
       method: 'POST',
       path: '/_session',
       'content-type': 'application/x-www-form-urlencoded',
-      body: `name=${this.username}&password=${this.password}`
+      body: `name=${username}&password=${password}`
     })
     this.ready = true
   }
