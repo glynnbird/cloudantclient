@@ -6,7 +6,7 @@ const IAM = require('./iam.js')
 /**
  * Cloudant HTTP2 Client
  *
- * Communicates with Cloudant using HTTP2. Can use username/password or IAM 
+ * Communicates with Cloudant using HTTP2. Can use username/password or IAM
  * authentication. Once authenticated, any HTTP2 request can be made on the
  * connection
  */
@@ -23,6 +23,7 @@ class CloudantClient {
     this.accessToken = null
     this.accessTokenExpiration = 0
     this.refreshTimeout = null
+    this.requestId = 1
     this.connect()
   }
 
@@ -90,6 +91,36 @@ class CloudantClient {
   }
 
   /**
+   * Handle request logging
+   */
+  logRequest (requestId, opts, body) {
+    if (process.env.DEBUG && process.env.DEBUG.includes('cloudantclient')) {
+      const now = new Date().toISOString()
+      let auth = ''
+      if (opts.cookie) {
+        auth = ' COOKIE'
+      } else if (opts.authorization) {
+        auth = ' BEARER'
+      }
+      let length = ''
+      if (body) {
+        length = ` body=${body.length}`
+      }
+      console.log(`${requestId} ${now} ${opts[':method']} ${opts[':path']}${auth}${length}`)
+    }
+  }
+
+  /**
+   * Handle response logging
+   */
+  logResponse (requestId, statusCode, length) {
+    if (process.env.DEBUG && process.env.DEBUG.includes('cloudantclient')) {
+      const now = new Date().toISOString()
+      console.log(`${requestId} ${now} ${statusCode} ${length}`)
+    }
+  }
+
+  /**
    * Make requests over the established HTTP2 connection.
    * @param {object} opts The request options. method/path/body/qs
    * @return {object} The returned data
@@ -143,6 +174,12 @@ class CloudantClient {
         delete opts.body
       }
 
+      // request id
+      const requestId = this.requestId
+      this.logRequest(requestId, opts, body)
+      opts.requestid = requestId
+      this.requestId++
+
       // make the request
       const req = this.client.request(opts)
 
@@ -174,6 +211,7 @@ class CloudantClient {
 
       // end of response
       req.on('end', () => {
+        this.logResponse(requestId, headers[':status'], data.length)
         if (headers['content-type'] === 'application/json') {
           data = JSON.parse(data)
         }
@@ -189,6 +227,61 @@ class CloudantClient {
         reject(e)
       })
     })
+  }
+
+  /**
+   * Combine two URL paths together, avoiding //
+   * @param {string} p1 The first part of the path e.g. '/mydb'
+   * @param {string} p2 The second part of the path e.g. '/_all_dbs'
+   * @return {object} The returned data e.g. /mydb/_all_dbs
+   */
+  combinePaths (p1, p2) {
+    const startSlash = /^\//
+    const endSlash = /\/$/
+    if (!p1.match(startSlash)) {
+      p1 = '/' + p1
+    }
+    p1 = p1.replace(endSlash, '')
+    if (p2) {
+      if (!p2.match(startSlash)) {
+        p2 = '/' + p2
+      }
+    }
+    return p1 + p2
+  }
+
+  /**
+   * Database helper
+   * @param {string} dbName The name of the database to deal with
+   * @return {object} An object containing a request function
+   */
+  db (dbName) {
+    const encodedDbName = encodeURIComponent(dbName)
+    return {
+      request: async (opts) => {
+        const root = `/${encodedDbName}`
+        if (opts.path) {
+          opts.path = this.combinePaths(root, opts.path)
+        } else {
+          opts.path = root
+        }
+        return this.request(opts)
+      },
+      partition: (partitionName) => {
+        const encodedPartitionName = encodeURIComponent(partitionName)
+        return {
+          request: async (opts) => {
+            const root = `/${encodedDbName}/_partition/${encodedPartitionName}`
+            if (opts.path) {
+              opts.path = this.combinePaths(root, opts.path)
+            } else {
+              opts.path = `/${encodedDbName}/_partition/${encodedPartitionName}`
+            }
+            return this.request(opts)
+          }
+        }
+      }
+    }
   }
 }
 

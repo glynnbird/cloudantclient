@@ -4,7 +4,7 @@ const https = require('https')
 /**
  * IAM authentication handler
  *
- * Exchanges an IAM API key for a time-limited token that can be used as a 
+ * Exchanges an IAM API key for a time-limited token that can be used as a
  * "bearer token" in future API calls
  */
 class IAM {
