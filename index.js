@@ -93,9 +93,8 @@ class CloudantClient {
   /**
    * Handle request logging
    */
-  logRequest (requestId, opts, body) {
+  logRequest (requestId, opts, body, startTime) {
     if (process.env.DEBUG && process.env.DEBUG.includes('cloudantclient')) {
-      const now = new Date().toISOString()
       let auth = ''
       if (opts.cookie) {
         auth = ' COOKIE'
@@ -106,17 +105,18 @@ class CloudantClient {
       if (body) {
         length = ` body=${body.length}`
       }
-      console.log(`${requestId} ${now} ${opts[':method']} ${opts[':path']}${auth}${length}`)
+      console.log(`${requestId} ${startTime.toISOString()} ${opts[':method']} ${opts[':path']}${auth}${length}`)
     }
   }
 
   /**
    * Handle response logging
    */
-  logResponse (requestId, statusCode, length) {
+  logResponse (requestId, statusCode, length, startTime) {
     if (process.env.DEBUG && process.env.DEBUG.includes('cloudantclient')) {
-      const now = new Date().toISOString()
-      console.log(`${requestId} ${now} ${statusCode} ${length}`)
+      const now = new Date()
+      const diff = now.getTime() - startTime.getTime()
+      console.log(`${requestId} ${now.toISOString()} +${diff} ${statusCode} ${length}`)
     }
   }
 
@@ -176,7 +176,8 @@ class CloudantClient {
 
       // request id
       const requestId = this.requestId
-      this.logRequest(requestId, opts, body)
+      const startTime = new Date()
+      this.logRequest(requestId, opts, body, startTime)
       opts.requestid = requestId
       this.requestId++
 
@@ -211,15 +212,21 @@ class CloudantClient {
 
       // end of response
       req.on('end', () => {
-        this.logResponse(requestId, headers[':status'], data.length)
+        const statusCode = headers[':status']
+        this.logResponse(requestId, statusCode, data.length, startTime)
         if (headers['content-type'] === 'application/json') {
           data = JSON.parse(data)
         }
-        resolve({
-          statusCode: headers[':status'],
+        const retval = {
+          statusCode,
           headers,
           data
-        })
+        }
+        if (statusCode < 400) {
+          resolve(retval)
+        } else {
+          reject(retval)
+        }
       })
 
       // error handling
