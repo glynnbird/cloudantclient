@@ -2,6 +2,13 @@
 
 A p.o.c minimal Cloudant HTTP2 client.
 
+- No dependencies.
+- HTTP2 transport.
+- Promise API.
+- Optional logging.
+- IAM auth.
+- or user/pass auth.
+
 ## Usage
 
 ```js

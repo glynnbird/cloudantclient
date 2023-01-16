@@ -1,5 +1,6 @@
 const http2 = require('node:http2')
 const querystring = require('node:querystring')
+const crypto = require('crypto')
 const CookieJar = require('./cookie.js')
 const IAM = require('./iam.js')
 
@@ -24,6 +25,7 @@ class CloudantClient {
     this.accessTokenExpiration = 0
     this.refreshTimeout = null
     this.requestId = 1
+    this.uuid = crypto.randomUUID().substring(0,8)
     this.connect()
   }
 
@@ -174,11 +176,11 @@ class CloudantClient {
         delete opts.body
       }
 
-      // request id
+      // request id - add header to allow tracking
       const requestId = this.requestId
+      opts.requestid = `${this.uuid}${requestId}`
       const startTime = new Date()
-      this.logRequest(requestId, opts, body, startTime)
-      opts.requestid = requestId
+      this.logRequest(opts.requestid, opts, body, startTime)
       this.requestId++
 
       // make the request
@@ -213,7 +215,7 @@ class CloudantClient {
       // end of response
       req.on('end', () => {
         const statusCode = headers[':status']
-        this.logResponse(requestId, statusCode, data.length, startTime)
+        this.logResponse(opts.requestid, statusCode, data.length, startTime)
         if (headers['content-type'] === 'application/json') {
           data = JSON.parse(data)
         }
