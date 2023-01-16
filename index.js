@@ -40,15 +40,15 @@ class CloudantClient {
    * Authenticate with Cloudant by passing a username and password and
    * getting a "Set-Cookie" header. The cookie can be return to the server
    * to allow access from then on.
-   * @param {string} username The Cloudant username or apikey.
+   * @param {string} name The Cloudant username or apikey.
    * @param {string} password The Cloudant password.
    */
-  async auth (username, password) {
+  async auth (name, password) {
     await this.request({
       method: 'POST',
       path: '/_session',
       'content-type': 'application/x-www-form-urlencoded',
-      body: `name=${username}&password=${password}`
+      body: new URLSearchParams({ name, password }).toString()
     })
     this.ready = true
   }

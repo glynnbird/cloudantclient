@@ -44,7 +44,13 @@ If you're doing a lot of work with known database, then the `db(dbName)` helper 
 ```js
 const db = client.db('mydb')
 // the path becomes relative to `/mydb`
+// get all documents
 await db.request({ path: '/_all_dbs' })
+// get all documents with options
+await db.request({ path: '/_all_dbs', qs: { limit: 5, include_docs: true } })
+// insert new doc (auto-generated id)
+await db.request({ path: '/', body: { a: 1, b: 'two', c: true}}})
+// delete a document
 await db.request({ method: 'delete', path: '/mydocid?rev=2-5216' })
 ```
 
