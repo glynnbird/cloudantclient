@@ -48,7 +48,7 @@ class CloudantClient {
       method: 'POST',
       path: '/_session',
       'content-type': 'application/x-www-form-urlencoded',
-      body: new URLSearchParams({ name, password }).toString()
+      body: querystring.stringify({ name, password })
     })
     this.ready = true
   }
