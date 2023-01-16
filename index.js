@@ -4,6 +4,22 @@ const crypto = require('crypto')
 const CookieJar = require('./cookie.js')
 const IAM = require('./iam.js')
 
+// mime types
+const MIME_FORM_ENCODED = 'application/x-www-form-urlencoded'
+const MIME_JSON = 'application/json'
+
+// http methods
+const HTTP_GET = 'GET'
+
+// path
+const DEFAULT_PATH = '/'
+
+// http2
+const HTTP2_PATH = ':path'
+const HTTP2_METHOD = ':method'
+const HTTP2_CONTENT_TYPE = 'content-type'
+const HTTP2_SET_COOKIE = 'set-cookie'
+
 /**
  * Cloudant HTTP2 Client
  *
@@ -25,7 +41,7 @@ class CloudantClient {
     this.accessTokenExpiration = 0
     this.refreshTimeout = null
     this.requestId = 1
-    this.uuid = crypto.randomUUID().substring(0,8)
+    this.uuid = crypto.randomUUID().substring(0, 8)
     this.connect()
   }
 
@@ -40,7 +56,7 @@ class CloudantClient {
 
   /**
    * Authenticate with Cloudant by passing a username and password and
-   * getting a "Set-Cookie" header. The cookie can be return to the server
+   * getting a "Set-Cookie" header. The cookie can be returned to the server
    * to allow access from then on.
    * @param {string} name The Cloudant username or apikey.
    * @param {string} password The Cloudant password.
@@ -49,7 +65,7 @@ class CloudantClient {
     await this.request({
       method: 'POST',
       path: '/_session',
-      'content-type': 'application/x-www-form-urlencoded',
+      'content-type': MIME_FORM_ENCODED,
       body: querystring.stringify({ name, password })
     })
     this.ready = true
@@ -107,7 +123,7 @@ class CloudantClient {
       if (body) {
         length = ` body=${body.length}`
       }
-      console.log(`${requestId} ${startTime.toISOString()} ${opts[':method']} ${opts[':path']}${auth}${length}`)
+      console.log(`${requestId} ${startTime.toISOString()} ${opts[HTTP2_METHOD]} ${opts[HTTP2_PATH]}${auth}${length}`)
     }
   }
 
@@ -133,36 +149,36 @@ class CloudantClient {
         opts = {}
       }
       if (opts.method) {
-        opts[':method'] = opts.method.toUpperCase()
+        opts[HTTP2_METHOD] = opts.method.toUpperCase()
         delete opts.method
       }
       if (opts.path) {
-        opts[':path'] = opts.path
+        opts[HTTP2_PATH] = opts.path
         delete opts.path
       }
-      if (!opts[':method']) {
-        opts[':method'] = 'GET'
+      if (!opts[HTTP2_METHOD]) {
+        opts[HTTP2_METHOD] = HTTP_GET
       }
-      if (!opts[':path']) {
-        opts[':path'] = '/'
+      if (!opts[HTTP2_PATH]) {
+        opts[HTTP2_PATH] = DEFAULT_PATH
       }
-      if (!opts['content-type']) {
-        opts['content-type'] = 'application/json'
+      if (!opts[HTTP2_CONTENT_TYPE]) {
+        opts[HTTP2_CONTENT_TYPE] = MIME_JSON
       }
-      const cookieStr = this.jar.getCookieString(this.url + opts[':path'])
+      const cookieStr = this.jar.getCookieString(this.url + opts[HTTP2_PATH])
       if (cookieStr) {
         opts.cookie = cookieStr
       }
 
       // query string
       if (opts.qs) {
-        opts[':path'] += '?' + querystring.stringify(opts.qs)
+        opts[HTTP2_PATH] += `?${querystring.stringify(opts.qs)}`
         delete opts.qs
       }
 
       // iam
       if (this.accessToken) {
-        opts.authorization = 'Bearer ' + this.accessToken
+        opts.authorization = `Bearer ${this.accessToken}`
       }
 
       // body
@@ -202,8 +218,8 @@ class CloudantClient {
       // initial response with headers
       req.on('response', (h) => {
         headers = h
-        if (headers['set-cookie'] && headers['set-cookie'].length > 0) {
-          for (const cookieStr of headers['set-cookie']) {
+        if (headers[HTTP2_SET_COOKIE] && headers[HTTP2_SET_COOKIE].length > 0) {
+          for (const cookieStr of headers[HTTP2_SET_COOKIE]) {
             this.jar.parse(cookieStr, this.url)
           }
         }
@@ -216,7 +232,7 @@ class CloudantClient {
       req.on('end', () => {
         const statusCode = headers[':status']
         this.logResponse(opts.requestid, statusCode, data.length, startTime)
-        if (headers['content-type'] === 'application/json') {
+        if (headers[HTTP2_CONTENT_TYPE] === MIME_JSON) {
           data = JSON.parse(data)
         }
         const retval = {
