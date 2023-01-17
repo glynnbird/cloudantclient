@@ -3,22 +3,7 @@ const querystring = require('node:querystring')
 const crypto = require('crypto')
 const CookieJar = require('./cookie.js')
 const IAM = require('./iam.js')
-
-// mime types
-const MIME_FORM_ENCODED = 'application/x-www-form-urlencoded'
-const MIME_JSON = 'application/json'
-
-// http methods
-const HTTP_GET = 'GET'
-
-// path
-const DEFAULT_PATH = '/'
-
-// http2
-const HTTP2_PATH = ':path'
-const HTTP2_METHOD = ':method'
-const HTTP2_CONTENT_TYPE = 'content-type'
-const HTTP2_SET_COOKIE = 'set-cookie'
+const constants = require('./constants.js')
 
 /**
  * Cloudant HTTP2 Client
@@ -65,7 +50,7 @@ class CloudantClient {
     await this.request({
       method: 'POST',
       path: '/_session',
-      'content-type': MIME_FORM_ENCODED,
+      'content-type': constants.MIME_FORM_ENCODED,
       body: querystring.stringify({ name, password })
     })
     this.ready = true
@@ -123,7 +108,7 @@ class CloudantClient {
       if (body) {
         length = ` body=${body.length}`
       }
-      console.log(`${requestId} ${startTime.toISOString()} ${opts[HTTP2_METHOD]} ${opts[HTTP2_PATH]}${auth}${length}`)
+      console.log(`${requestId} ${startTime.toISOString()} ${opts[constants.HTTP2_METHOD]} ${opts[constants.HTTP2_PATH]}${auth}${length}`)
     }
   }
 
@@ -161,30 +146,30 @@ class CloudantClient {
         opts = {}
       }
       if (opts.method) {
-        opts[HTTP2_METHOD] = opts.method.toUpperCase()
+        opts[constants.HTTP2_METHOD] = opts.method.toUpperCase()
         delete opts.method
       }
       if (opts.path) {
-        opts[HTTP2_PATH] = opts.path
+        opts[constants.HTTP2_PATH] = opts.path
         delete opts.path
       }
-      if (!opts[HTTP2_METHOD]) {
-        opts[HTTP2_METHOD] = HTTP_GET
+      if (!opts[constants.HTTP2_METHOD]) {
+        opts[constants.HTTP2_METHOD] = constants.HTTP_GET
       }
-      if (!opts[HTTP2_PATH]) {
-        opts[HTTP2_PATH] = DEFAULT_PATH
+      if (!opts[constants.HTTP2_PATH]) {
+        opts[constants.HTTP2_PATH] = constants.DEFAULT_PATH
       }
-      if (!opts[HTTP2_CONTENT_TYPE]) {
-        opts[HTTP2_CONTENT_TYPE] = MIME_JSON
+      if (!opts[constants.HTTP2_CONTENT_TYPE]) {
+        opts[constants.HTTP2_CONTENT_TYPE] = constants.MIME_JSON
       }
-      const cookieStr = this.jar.getCookieString(this.url + opts[HTTP2_PATH])
+      const cookieStr = this.jar.getCookieString(this.url + opts[constants.HTTP2_PATH])
       if (cookieStr) {
         opts.cookie = cookieStr
       }
 
       // query string
       if (opts.qs) {
-        opts[HTTP2_PATH] += `?${querystring.stringify(opts.qs)}`
+        opts[constants.HTTP2_PATH] += `?${querystring.stringify(opts.qs)}`
         delete opts.qs
       }
 
@@ -223,15 +208,15 @@ class CloudantClient {
       req.end()
 
       // handle the response
-      req.setEncoding('utf8')
+      req.setEncoding(constants.ENCODING_UTF8)
       let data = ''
       let headers = null
 
       // initial response with headers
       req.on('response', (h) => {
         headers = h
-        if (headers[HTTP2_SET_COOKIE] && headers[HTTP2_SET_COOKIE].length > 0) {
-          for (const cookieStr of headers[HTTP2_SET_COOKIE]) {
+        if (headers[constants.HTTP2_SET_COOKIE] && headers[constants.HTTP2_SET_COOKIE].length > 0) {
+          for (const cookieStr of headers[constants.HTTP2_SET_COOKIE]) {
             this.jar.parse(cookieStr, this.url)
           }
         }
@@ -244,7 +229,7 @@ class CloudantClient {
       req.on('end', () => {
         const statusCode = headers[':status']
         this.logResponse(opts.requestid, statusCode, data.length, startTime)
-        if (headers[HTTP2_CONTENT_TYPE] === MIME_JSON) {
+        if (headers[constants.HTTP2_CONTENT_TYPE] === constants.MIME_JSON) {
           data = JSON.parse(data)
         }
         const retval = {
