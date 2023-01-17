@@ -153,7 +153,7 @@ This library supports two types of authentication
 
 ## Logging
 
-If a `DEBUG` environment variable contains the string `cloudantclient` then logs will appear on `stdout`:
+If a `DEBUG` environment variable contains the string `http2` then logs will appear on `stdout`:
 
 ```
 33a392f21 2023-01-16T13:43:39.555Z GET /_all_dbs?limit=5 BEARER
