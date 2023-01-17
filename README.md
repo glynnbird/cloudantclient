@@ -42,6 +42,79 @@ console.log(JSON.stringify(response))
 client.disconnect()
 ```
 
+## Multiple requests
+
+One of the advantages of HTTP2 is to allow multiple requests to share the same connection. This is achieved by firing off multiple calls to `client.request` as you need, or you can use the `client.requests` function:
+
+```js
+const arrOpts = [
+  {
+    method: 'GET',
+    path: '/_all_dbs',
+    qs: {
+      limit: 5
+    }
+  },
+  {
+    method: 'POST',
+    path: '/indvaliddb',
+    body: { a: 1, b:2, c: 'three'}
+  },
+  {
+    method: 'POST',
+    path: '/testdb',
+    body: { a: 1, b:2, c: 'three'}
+  },
+  {
+    method: 'GET',
+    path: '/testdb/_all_docs',
+    qs: { include_docs: true, limit:5 }
+  }
+]
+
+const r = await client.requests(arrOpts)
+console.log(r)
+```
+
+The return value from client.requests is the same as from [Promise.allSettled](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled):
+
+```js
+[
+  {
+    status: 'fulfilled',
+    value: {
+      statusCode: 200,
+      headers: [Object: null prototype],
+      data: [Array]
+    }
+  },
+  {
+    status: 'rejected',
+    reason: {
+      statusCode: 404,
+      headers: [Object: null prototype],
+      data: [Object]
+    }
+  },
+  {
+    status: 'fulfilled',
+    value: {
+      statusCode: 201,
+      headers: [Object: null prototype],
+      data: [Object]
+    }
+  },
+  {
+    status: 'fulfilled',
+    value: {
+      statusCode: 200,
+      headers: [Object: null prototype],
+      data: [Object]
+    }
+  }
+]
+```
+
 ## Helpers
 
 ### Database helper

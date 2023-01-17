@@ -139,6 +139,18 @@ class CloudantClient {
   }
 
   /**
+   * Make multiple requests in parallel over the same established HTTP2 connection.
+   * @param {Array} optsArr The array of request opts.
+   * @return {Array} The returned data
+   */
+  async requests (optsArr) {
+    const promises = optsArr.map((opts) => {
+      return this.request(opts)
+    })
+    return Promise.allSettled(promises)
+  }
+
+  /**
    * Make requests over the established HTTP2 connection.
    * @param {object} opts The request options. method/path/body/qs
    * @return {object} The returned data
