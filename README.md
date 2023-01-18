@@ -72,6 +72,8 @@ The `client.request` function returns a Promise which resolves as:
 }
 ```
 
+If the statusCode < 400, then the Promise rejects.
+
 ## Multiple requests
 
 One of the advantages of HTTP2 is to allow multiple requests to share the same connection at the same time. This is achieved by firing off multiple calls to `client.request` as you need, or you can use the `client.requests` function:
