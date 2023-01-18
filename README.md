@@ -42,9 +42,39 @@ console.log(JSON.stringify(response))
 client.disconnect()
 ```
 
+The `client.request` function returns a Promise which resolves as: 
+
+```js
+{
+  statusCode: 201,
+  headers: {
+    ':status': 201,
+    'cache-control': 'must-revalidate',
+    'content-length': '95',
+    'content-type': 'application/json',
+    date: 'Wed, 18 Jan 2023 10:19:20 GMT',
+    location: 'https://my-cloudant.cloudant.com:443/testdb/ee50f5aafd0b5a5cd08443da50f24047',
+    server: 'CouchDB/3.2.2 (Erlang OTP/23)',
+    'transaction-id': '43a783a03a57fe29b8be6ade79efdc1a',
+    'x-cloudant-action': 'cloudantnosqldb.data-document.write',
+    'x-couch-request-id': '43a783a03a',
+    'x-frame-options': 'ALLOW-FROM https://my-cloudant.cloudant.com:443',
+    'strict-transport-security': 'max-age=31536000',
+    'x-content-type-options': 'nosniff',
+    'x-cloudant-request-class': 'write',
+    'x-cloudant-backend': 'some-cluster'
+  },
+  data: {
+    ok: true,
+    id: 'ee50f5aafd0b5a5cd08443da50f24047',
+    rev: '1-debc5c8de13e1f36787fe391da8191a6'
+  }
+}
+```
+
 ## Multiple requests
 
-One of the advantages of HTTP2 is to allow multiple requests to share the same connection. This is achieved by firing off multiple calls to `client.request` as you need, or you can use the `client.requests` function:
+One of the advantages of HTTP2 is to allow multiple requests to share the same connection at the same time. This is achieved by firing off multiple calls to `client.request` as you need, or you can use the `client.requests` function:
 
 ```js
 const arrOpts = [
@@ -119,7 +149,7 @@ The return value from client.requests is the same as from [Promise.allSettled](h
 
 ### Database helper
 
-If you're doing a lot of work with known database, then the `db(dbName)` helper can save some typing:
+If you're doing a lot of work with the same database, then the `db(dbName)` helper can save some typing:
 
 ```js
 const db = client.db('mydb')
@@ -149,7 +179,7 @@ await p.request({ path: '/_all_dbs' })
 This library supports two types of authentication
 
 - `await client.auth('username', 'password')` - creates a session with a client and uses cookies so that the session is refreshed assuming regular usage.
-- `await client.iam('apikey', true)` - exchanges your IAM API key for a bearer token. If `true` is passed as the second parameter, the token is refreshed towards the end of tokens lifetime.
+- `await client.iam('apikey', true)` - exchanges your IAM API key for a bearer token. If `true` is passed as the second parameter, the token is refreshed towards the end of then token's lifetime.
 
 ## Logging
 
