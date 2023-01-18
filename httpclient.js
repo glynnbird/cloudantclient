@@ -1,7 +1,6 @@
 
 const { URL } = require('url')
 const https = require('https')
-const querystring = require('node:querystring')
 
 // constants
 const constants = require('./constants.js')
@@ -46,7 +45,7 @@ class HttpClient {
         if (opts.headers[constants.HTTP2_CONTENT_TYPE] === constants.MIME_JSON) {
           body = JSON.stringify(opts.body)
         } else if (opts.headers[constants.HTTP2_CONTENT_TYPE] === constants.MIME_FORM_ENCODED) {
-          body = querystring.stringify(opts.body)
+          body = new URLSearchParams(opts.body).toString()
         }
       }
       const parsed = new URL(opts.url)

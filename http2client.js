@@ -1,5 +1,4 @@
 const http2 = require('node:http2')
-const querystring = require('node:querystring')
 const crypto = require('crypto')
 const CookieJar = require('./cookie.js')
 const constants = require('./constants.js')
@@ -112,7 +111,7 @@ class Http2Client {
 
       // query string
       if (opts.qs) {
-        opts[constants.HTTP2_PATH] += `?${querystring.stringify(opts.qs)}`
+        opts[constants.HTTP2_PATH] += `?${new URLSearchParams(opts.qs).toString()}`
         delete opts.qs
       }
 

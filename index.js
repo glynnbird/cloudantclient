@@ -1,4 +1,3 @@
-const querystring = require('node:querystring')
 const IAM = require('./iam.js')
 const constants = require('./constants.js')
 const Http2Client = require('./http2client.js')
@@ -37,7 +36,7 @@ class CloudantClient extends Http2Client {
       method: 'POST',
       path: '/_session',
       'content-type': constants.MIME_FORM_ENCODED,
-      body: querystring.stringify({ name, password })
+      body: new URLSearchParams({ name, password }).toString()
     })
   }
 
@@ -73,12 +72,12 @@ class CloudantClient extends Http2Client {
   }
 
   /**
-   * Make requests over the established HTTP2 connection.
+   * Make a request over the established HTTP2 connection.
    * @param {object} opts The request options. method/path/body/qs + other headers
    * @return {object} The returned data
    */
   async request (opts) {
-    // iam
+    // if we've authenticated with IAM, insert the bearer token header
     if (this.accessToken) {
       opts.authorization = `Bearer ${this.accessToken}`
     }
@@ -94,6 +93,8 @@ class CloudantClient extends Http2Client {
       clearTimeout(this.refreshTimeout)
       this.refreshTimeout = null
     }
+    this.accessToken = null
+    this.accessTokenExpiration = 0
   }
 
   /**
