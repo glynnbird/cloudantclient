@@ -143,7 +143,7 @@ class CloudantClient extends Http2Client {
             if (opts.path) {
               opts.path = this.combinePaths(root, opts.path)
             } else {
-              opts.path = `/${encodedDbName}/_partition/${encodedPartitionName}`
+              opts.path = root
             }
             return this.request(opts)
           }

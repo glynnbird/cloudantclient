@@ -22,12 +22,11 @@ class IAM extends HttpClient {
         grant_type: 'urn:ibm:params:oauth:grant-type:apikey',
         apikey: apiKey
       },
-      headers: {
-        'content-type': constants.MIME_FORM_ENCODED,
-        accept: constants.MIME_JSON
-      }
+      headers: { }
     }
-    return await this.request(req)
+    req.headers[constants.HTTP2_CONTENT_TYPE] = constants.MIME_FORM_ENCODED
+    req.headers[constants.HTTP2_ACCEPT] = constants.MIME_JSON
+    return this.request(req)
   }
 }
 

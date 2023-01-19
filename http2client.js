@@ -8,7 +8,7 @@ const constants = require('./constants.js')
  *
  * Communicates with a server using HTTP2. Will parse  set-cookie headers
  * from the server and pass back relevant cookies on future requests.
- * Will log requests if an environment variable DEBUG=http2 is set. 
+ * Will log requests if an environment variable DEBUG=http2 is set.
  */
 class Http2Client {
   /**

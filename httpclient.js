@@ -35,7 +35,7 @@ class HttpClient {
     if (!opts.headers) {
       opts.headers = {}
       opts.headers[constants.HTTP2_CONTENT_TYPE] = constants.MIME_JSON
-      opts.headers.accept = constants.MIME_JSON
+      opts.headers[constants.HTTP2_ACCEPT] = constants.MIME_JSON
     }
 
     return new Promise((resolve, reject) => {

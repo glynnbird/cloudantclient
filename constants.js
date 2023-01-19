@@ -16,6 +16,7 @@ const constants = {
   HTTP2_METHOD: ':method',
   HTTP2_CONTENT_TYPE: 'content-type',
   HTTP2_SET_COOKIE: 'set-cookie',
+  HTTP2_ACCEPT: 'accept',
 
   // encoding
   ENCODING_UTF8: 'utf8'
